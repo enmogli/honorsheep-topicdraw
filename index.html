@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+  <!-- 加入 maximum-scale=1.0, user-scalable=no 防止手機雙擊放大干擾點擊 -->
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>咩話好說 - 領頭羊抽籤系統</title>
-  <!-- 引入 Tailwind CSS (CDN版本，免安裝) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @keyframes fade-in-up {
@@ -19,7 +19,6 @@
     }
     .animate-spin-slow { animation: spin-slow 3s linear infinite; }
     
-    /* 羊身體用力推的動畫 */
     @keyframes push-strain {
       0%, 100% { transform: translateX(0) scaleY(1); }
       50% { transform: translateX(6px) scaleY(0.96); }
@@ -29,29 +28,32 @@
       transform-origin: bottom center;
     }
     
-    /* 羊手臂來回推的動畫 */
     @keyframes push-horizontal {
       0%, 100% { transform: translateX(0); }
       50% { transform: translateX(8px); }
     }
     .animate-push-horizontal { animation: push-horizontal 0.3s ease-in-out infinite; }
     
-    /* 衝刺/用力流汗線條 */
     @keyframes dash {
       0% { opacity: 1; transform: translateX(0); }
       100% { opacity: 0; transform: translateX(-10px); }
     }
     .animate-dash { animation: dash 0.4s linear infinite; }
 
-    /* 隱藏捲軸但保留功能 */
-    body { overflow: hidden; }
+    /* 針對手機瀏覽器優化：使用 dvh 適應動態網址列，並取消點擊高光 */
+    body { 
+      overflow: hidden; 
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
   </style>
 </head>
-<body class="h-screen w-full bg-gradient-to-br from-green-50 via-teal-50 to-blue-50 font-sans p-2 md:p-4 flex flex-col relative">
+<!-- 使用 h-[100dvh] 取代 h-screen，避免在 Safari 被下方工具列遮擋 -->
+<body class="h-[100dvh] w-full bg-gradient-to-br from-green-50 via-teal-50 to-blue-50 font-sans p-2 md:p-4 flex flex-col relative">
 
   <!-- 頂部導覽 -->
-  <div class="flex justify-between items-center mb-2 md:mb-4 relative z-40">
-    <button id="btn-settings" class="p-2 md:p-3 bg-white/50 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-gray-800 transition-colors flex items-center gap-2">
+  <div class="flex justify-between items-center mb-2 md:mb-4 relative z-40 shrink-0">
+    <button id="btn-settings" class="p-2 md:p-3 bg-white/50 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-gray-800 transition-colors flex items-center gap-2 active:scale-95">
       <svg id="icon-settings" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
       <span class="font-bold hidden md:inline">管理題庫</span>
     </button>
@@ -62,7 +64,7 @@
       </h1>
     </div>
 
-    <button id="btn-mute" class="p-2 md:p-3 bg-white/50 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-pink-500 transition-colors">
+    <button id="btn-mute" class="p-2 md:p-3 bg-white/50 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-pink-500 transition-colors active:scale-95">
       <svg id="icon-vol-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
       <svg id="icon-vol-off" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
     </button>
@@ -80,7 +82,6 @@
   <!-- 抽籤主要畫面區 -->
   <div class="flex-1 flex flex-col items-center justify-center relative w-full min-h-0">
     <div class="flex items-end justify-center relative w-full max-w-4xl px-2 md:px-4 mb-4 md:mb-8">
-      <!-- 地板陰影 -->
       <div class="absolute bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 w-3/4 md:w-[55%] h-6 md:h-8 bg-teal-900/10 rounded-[100%] blur-md -z-10"></div>
       
       <!-- 左側：綿羊 -->
@@ -94,22 +95,18 @@
             <ellipse cx="75" cy="40" rx="20" ry="16" fill="#374151" transform="rotate(10 75 40)" />
             <ellipse cx="55" cy="35" rx="8" ry="4" fill="#374151" transform="rotate(-30 55 35)" />
             <path d="M 60 30 C 55 20, 70 15, 75 25 C 85 20, 95 30, 85 38 C 75 40, 65 40, 60 30 Z" fill="#ffffff" />
-            <!-- 用力眼睛 (隱藏) -->
             <g id="sheep-eyes-push" class="hidden" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
               <polyline points="76,35 81,38 76,41" /><polyline points="91,35 86,38 91,41" />
             </g>
-            <!-- 正常眼睛 -->
             <g id="sheep-eyes-normal" fill="#ffffff">
               <circle cx="80" cy="38" r="3.5" /><circle cx="90" cy="38" r="3.5" />
               <circle cx="81" cy="37.5" r="1.5" fill="#000" /><circle cx="91" cy="37.5" r="1.5" fill="#000" />
             </g>
             <circle cx="73" cy="46" r="3.5" fill="#ff99aa" opacity="0.8" />
-            <!-- 嘴巴 -->
             <path id="sheep-mouth" d="M 82 45 Q 85 48 88 45" stroke="#ffffff" stroke-width="1.5" fill="none" stroke-linecap="round" />
             <ellipse id="sheep-mouth-speak" class="hidden" cx="85" cy="46" rx="3" ry="4" fill="#ff99aa" />
           </g>
           <g id="sheep-arm-front" style="animation-delay: 0.05s"><rect x="75" y="48" width="35" height="10" rx="5" fill="#374151" transform="rotate(-15 75 48)" /></g>
-          <!-- 衝刺線條 -->
           <g id="sheep-dash" class="hidden" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round">
             <line x1="15" y1="90" x2="5" y2="90" class="animate-dash" />
             <line x1="20" y1="100" x2="10" y2="100" class="animate-dash" style="animation-delay: 0.2s" />
@@ -120,11 +117,9 @@
       <!-- 右側：輪盤 -->
       <div class="z-10 relative scale-[0.65] sm:scale-75 md:scale-100 origin-bottom">
         <div class="relative w-72 h-72 md:w-80 md:h-80 flex items-center justify-center flex-shrink-0">
-          <!-- 輪盤指標 -->
           <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-5 z-20">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="#ef4444" stroke="#b91c1c" stroke-width="1" class="drop-shadow-lg filter"><path d="M12 22L2 2h20L12 22z" /></svg>
           </div>
-          <!-- 輪盤本體 -->
           <div id="wheel-container" class="w-full h-full rounded-full overflow-hidden border-8 border-yellow-300 shadow-[0_0_30px_rgba(0,0,0,0.1)] relative z-10" style="transition: transform 4s cubic-bezier(0.2, 0.8, 0.2, 1); transform: rotate(0deg);">
             <svg id="wheel-svg" viewBox="-150 -150 300 300" class="w-full h-full"></svg>
           </div>
@@ -134,10 +129,11 @@
   </div>
 
   <!-- 抽籤按鈕 -->
-  <div class="mb-6 md:mb-8 text-center relative z-40">
-    <button id="btn-spin" class="relative group disabled:opacity-50 disabled:cursor-not-allowed inline-block">
+  <div class="mb-6 md:mb-8 text-center relative z-40 shrink-0">
+    <!-- 加入 touch-none 防止手機雙擊縮放 -->
+    <button id="btn-spin" class="relative group disabled:opacity-50 disabled:cursor-not-allowed inline-block touch-none active:scale-95 transition-transform">
       <div class="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-60 group-hover:opacity-100 transition duration-300"></div>
-      <div id="btn-spin-text" class="relative bg-gradient-to-b from-yellow-300 to-yellow-500 text-yellow-900 font-black text-xl md:text-3xl px-10 md:px-12 py-4 md:py-5 rounded-full border-4 border-white shadow-[0_10px_0_#ca8a04] hover:-translate-y-1 active:translate-y-2 active:shadow-[0_0px_0_#ca8a04] transition-all">
+      <div id="btn-spin-text" class="relative bg-gradient-to-b from-yellow-300 to-yellow-500 text-yellow-900 font-black text-xl md:text-3xl px-10 md:px-12 py-4 md:py-5 rounded-full border-4 border-white shadow-[0_10px_0_#ca8a04] transition-all">
         轉下去
       </div>
     </button>
@@ -146,28 +142,27 @@
   <!-- 題庫設定 Modal -->
   <div id="modal-settings" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
     <div class="bg-white p-6 rounded-3xl shadow-2xl border-2 border-pink-200 w-full max-w-xl relative flex flex-col max-h-[90vh] animate-fade-in-up">
-      <button id="btn-close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none">✕</button>
+      <button id="btn-close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none p-2 active:scale-90">✕</button>
       <h3 class="text-xl font-bold text-gray-700 mb-4 flex items-center gap-2">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-pink-500"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
         管理題庫
       </h3>
       <p class="text-sm text-gray-500 mb-2">請每行輸入一個問題：</p>
       <textarea id="textarea-questions" placeholder="請輸入題目..." class="flex-1 w-full min-h-[200px] p-4 border-2 border-pink-100 rounded-2xl focus:outline-none focus:border-pink-400 transition-colors resize-none mb-4 text-gray-700 leading-relaxed font-medium bg-pink-50/30"></textarea>
-      <button id="btn-save-modal" class="w-full py-3 bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-black text-lg rounded-xl transition-transform hover:scale-[1.02] shadow-md flex-shrink-0">
+      <button id="btn-save-modal" class="w-full py-3 bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-black text-lg rounded-xl transition-transform active:scale-95 shadow-md flex-shrink-0">
         儲存並關閉
       </button>
       <p id="text-question-count" class="text-center text-sm text-gray-400 mt-3 flex-shrink-0"></p>
     </div>
   </div>
 
-  <!-- Toast 提示訊息 -->
+  <!-- Toast -->
   <div id="toast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-800/90 text-white px-6 py-3 rounded-full shadow-2xl z-[110] flex items-center gap-3 animate-bounce">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-    <span id="toast-msg" class="font-bold"></span>
+    <span id="toast-msg" class="font-bold whitespace-nowrap"></span>
   </div>
 
   <script>
-    // 預設的 16 個題目
     const DEFAULT_QUESTIONS = [
       "課業上有沒有遇到比較困難的地方？", "目前對於時間上還適應嗎？會不會覺得自己太忙？",
       "有參加社團活動嗎？覺得好玩嗎？", "校園生活還適應嗎？有沒有遇到什麼問題？",
@@ -189,8 +184,8 @@
     let isSpinning = false;
     let isMuted = false;
     let sharedAudioCtx = null;
+    let hasUnlockedAudio = false; // 手機解鎖標記
 
-    // DOM 元素選取
     const wheelSvg = document.getElementById('wheel-svg');
     const wheelContainer = document.getElementById('wheel-container');
     const btnSpin = document.getElementById('btn-spin');
@@ -203,7 +198,6 @@
     const toast = document.getElementById('toast');
     const toastMsg = document.getElementById('toast-msg');
     
-    // 羊的動畫元素
     const sheep = document.getElementById('sheep');
     const sheepArmBack = document.getElementById('sheep-arm-back');
     const sheepArmFront = document.getElementById('sheep-arm-front');
@@ -213,12 +207,10 @@
     const sheepMouthSpeak = document.getElementById('sheep-mouth-speak');
     const sheepDash = document.getElementById('sheep-dash');
 
-    // 初始化輪盤 SVG
     function renderWheel() {
       const radius = 150;
       const angle = 360 / questions.length;
       let svgContent = '';
-
       questions.forEach((q, i) => {
         const startAngle = (i * angle - 90) * (Math.PI / 180);
         const endAngle = ((i + 1) * angle - 90) * (Math.PI / 180);
@@ -243,18 +235,43 @@
       textQuestionCount.innerText = `目前共有 ${questions.length} 個題目`;
     }
 
-    // AudioContext
+    // 取得 AudioContext 並支援手機解鎖
     function getAudioContext() {
       if (!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (sharedAudioCtx.state === 'suspended') sharedAudioCtx.resume();
       return sharedAudioCtx;
     }
 
-    // 播放雀躍羊咩聲
+    // 手機瀏覽器強制解鎖音效與語音
+    function unlockAudioAndSpeech() {
+      if (hasUnlockedAudio) return;
+      try {
+        const ctx = getAudioContext();
+        if (ctx.state === 'suspended') ctx.resume();
+        
+        // 播一個無聲音的音效來解鎖 Web Audio
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+
+        // 播一段無聲的語音來解鎖 TTS
+        if ('speechSynthesis' in window) {
+          const silentUtterance = new SpeechSynthesisUtterance('');
+          silentUtterance.volume = 0;
+          window.speechSynthesis.speak(silentUtterance);
+        }
+        hasUnlockedAudio = true;
+      } catch (e) {
+        console.error("解鎖音效失敗", e);
+      }
+    }
+
     function playBaaSound() {
       if (isMuted) return;
       try {
         const ctx = getAudioContext();
+        if (ctx.state === 'suspended') ctx.resume();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         const filter = ctx.createBiquadFilter();
@@ -291,11 +308,11 @@
       } catch (e) {}
     }
 
-    // 播放木頭滾輪聲
     function playSpinSound() {
       if (isMuted) return;
       try {
         const ctx = getAudioContext();
+        if (ctx.state === 'suspended') ctx.resume();
         const totalDuration = 4.0;
         const totalTicks = 40;
 
@@ -330,11 +347,11 @@
       } catch(e) {}
     }
 
-    // 播放中獎音效
     function playWinSound() {
       if (isMuted) return;
       try {
         const ctx = getAudioContext();
+        if (ctx.state === 'suspended') ctx.resume();
         const playNote = (freq, startTime, duration, type = 'sine', vol = 0.3) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -358,35 +375,38 @@
       } catch (e) {}
     }
 
-    // 語音 TTS
     function speakText(text) {
       if (isMuted || !('speechSynthesis' in window)) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'zh-TW';
-      
-      const voices = window.speechSynthesis.getVoices();
-      const premiumVoice = voices.find(v => 
-        (v.lang.includes('zh-TW') || v.lang.includes('zh-HK') || v.lang.includes('zh-CN')) && 
-        (v.name.includes('Google') || v.name.includes('Yating') || v.name.includes('HsiaoChen') || v.name.includes('Hanhan') || v.name.includes('Zhiwei'))
-      );
-      if (premiumVoice) utterance.voice = premiumVoice;
-      
-      utterance.rate = 0.95;
-      utterance.pitch = 1.05;
-      
-      utterance.onstart = () => {
-        if (!isSpinning) {
-          sheepMouth.classList.add('hidden');
-          sheepMouthSpeak.classList.remove('hidden');
-        }
-      };
-      utterance.onend = () => {
-        sheepMouth.classList.remove('hidden');
-        sheepMouthSpeak.classList.add('hidden');
-      };
-      
-      window.speechSynthesis.speak(utterance);
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'zh-TW';
+        
+        const voices = window.speechSynthesis.getVoices();
+        const premiumVoice = voices.find(v => 
+          (v.lang.includes('zh-TW') || v.lang.includes('zh-HK') || v.lang.includes('zh-CN')) && 
+          (v.name.includes('Google') || v.name.includes('Yating') || v.name.includes('HsiaoChen') || v.name.includes('Hanhan') || v.name.includes('Zhiwei'))
+        );
+        if (premiumVoice) utterance.voice = premiumVoice;
+        
+        utterance.rate = 0.95;
+        utterance.pitch = 1.05;
+        
+        utterance.onstart = () => {
+          if (!isSpinning) {
+            sheepMouth.classList.add('hidden');
+            sheepMouthSpeak.classList.remove('hidden');
+          }
+        };
+        utterance.onend = () => {
+          sheepMouth.classList.remove('hidden');
+          sheepMouthSpeak.classList.add('hidden');
+        };
+        
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        console.error("語音播放失敗", e);
+      }
     }
 
     function showToast(msg) {
@@ -395,74 +415,87 @@
       setTimeout(() => toast.classList.add('hidden'), 3000);
     }
 
+    // 綁定所有點擊事件來解鎖音效 (手機必備)
+    document.body.addEventListener('touchstart', unlockAudioAndSpeech, { once: true });
+    document.body.addEventListener('click', unlockAudioAndSpeech, { once: true });
+
     // 旋轉邏輯
     btnSpin.addEventListener('click', () => {
-      if (isSpinning || questions.length < 2) return;
-      isSpinning = true;
-      btnSpin.disabled = true;
-      btnSpinText.innerText = '努力轉下去...';
-      
-      // 隱藏對話框
-      questionBox.classList.remove('scale-100', 'opacity-100', 'translate-y-0');
-      questionBox.classList.add('scale-90', 'opacity-0', '-translate-y-10');
-      
-      window.speechSynthesis.cancel();
-      sheepMouth.classList.remove('hidden');
-      sheepMouthSpeak.classList.add('hidden');
+      try {
+        if (isSpinning || questions.length < 2) return;
+        
+        // 點擊當下確保解鎖音效
+        unlockAudioAndSpeech();
+        
+        isSpinning = true;
+        btnSpin.disabled = true;
+        btnSpinText.innerText = '努力轉下去...';
+        
+        questionBox.classList.remove('scale-100', 'opacity-100', 'translate-y-0');
+        questionBox.classList.add('scale-90', 'opacity-0', '-translate-y-10');
+        
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        
+        sheepMouth.classList.remove('hidden');
+        sheepMouthSpeak.classList.add('hidden');
 
-      // 羊動畫開啟
-      sheep.classList.add('animate-push-strain');
-      sheepArmBack.classList.add('animate-push-horizontal');
-      sheepArmFront.classList.add('animate-push-horizontal');
-      sheepEyesNormal.classList.add('hidden');
-      sheepEyesPush.classList.remove('hidden');
-      sheepDash.classList.remove('hidden');
-      sheepMouth.setAttribute('d', 'M 82 45 Q 85 43 88 45');
+        sheep.classList.add('animate-push-strain');
+        sheepArmBack.classList.add('animate-push-horizontal');
+        sheepArmFront.classList.add('animate-push-horizontal');
+        sheepEyesNormal.classList.add('hidden');
+        sheepEyesPush.classList.remove('hidden');
+        sheepDash.classList.remove('hidden');
+        sheepMouth.setAttribute('d', 'M 82 45 Q 85 43 88 45');
 
-      playBaaSound();
-      playSpinSound();
+        playBaaSound();
+        playSpinSound();
 
-      const winningIndex = Math.floor(Math.random() * questions.length);
-      const anglePerSlice = 360 / questions.length;
-      const currentModulo = rotation % 360;
-      const baseRotation = rotation + (360 - currentModulo);
-      const extraSpins = 360 * 5;
-      const targetCenterAngle = winningIndex * anglePerSlice + (anglePerSlice / 2);
-      const clockwiseOffset = 360 - targetCenterAngle;
-      
-      rotation = baseRotation + extraSpins + clockwiseOffset;
-      wheelContainer.style.transform = `rotate(${rotation}deg)`;
+        const winningIndex = Math.floor(Math.random() * questions.length);
+        const anglePerSlice = 360 / questions.length;
+        const currentModulo = rotation % 360;
+        const baseRotation = rotation + (360 - currentModulo);
+        const extraSpins = 360 * 5;
+        const targetCenterAngle = winningIndex * anglePerSlice + (anglePerSlice / 2);
+        const clockwiseOffset = 360 - targetCenterAngle;
+        
+        rotation = baseRotation + extraSpins + clockwiseOffset;
+        wheelContainer.style.transform = `rotate(${rotation}deg)`;
 
-      setTimeout(() => {
+        setTimeout(() => {
+          isSpinning = false;
+          btnSpin.disabled = false;
+          btnSpinText.innerText = '轉下去';
+          
+          sheep.classList.remove('animate-push-strain');
+          sheepArmBack.classList.remove('animate-push-horizontal');
+          sheepArmFront.classList.remove('animate-push-horizontal');
+          sheepEyesNormal.classList.remove('hidden');
+          sheepEyesPush.classList.add('hidden');
+          sheepDash.classList.add('hidden');
+          sheepMouth.setAttribute('d', 'M 82 45 Q 85 48 88 45');
+
+          const winnerText = questions[winningIndex];
+          questionText.innerText = winnerText;
+          
+          questionBox.classList.remove('scale-90', 'opacity-0', '-translate-y-10');
+          questionBox.classList.add('scale-100', 'opacity-100', 'translate-y-0');
+
+          playWinSound();
+          speakText(winnerText);
+        }, 4000);
+      } catch (err) {
+        console.error("旋轉發生錯誤:", err);
+        // 發生錯誤時重置按鈕狀態，避免卡死
         isSpinning = false;
         btnSpin.disabled = false;
         btnSpinText.innerText = '轉下去';
-        
-        // 羊動畫關閉
-        sheep.classList.remove('animate-push-strain');
-        sheepArmBack.classList.remove('animate-push-horizontal');
-        sheepArmFront.classList.remove('animate-push-horizontal');
-        sheepEyesNormal.classList.remove('hidden');
-        sheepEyesPush.classList.add('hidden');
-        sheepDash.classList.add('hidden');
-        sheepMouth.setAttribute('d', 'M 82 45 Q 85 48 88 45');
-
-        const winnerText = questions[winningIndex];
-        questionText.innerText = winnerText;
-        
-        // 顯示對話框
-        questionBox.classList.remove('scale-90', 'opacity-0', '-translate-y-10');
-        questionBox.classList.add('scale-100', 'opacity-100', 'translate-y-0');
-
-        playWinSound();
-        speakText(winnerText);
-      }, 4000);
+      }
     });
 
     // 靜音切換
     document.getElementById('btn-mute').addEventListener('click', () => {
       isMuted = !isMuted;
-      window.speechSynthesis.cancel();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       if (isMuted) {
         document.getElementById('icon-vol-on').classList.add('hidden');
         document.getElementById('icon-vol-off').classList.remove('hidden');
@@ -472,7 +505,6 @@
       }
     });
 
-    // Modal 控制
     const iconSettings = document.getElementById('icon-settings');
     document.getElementById('btn-settings').addEventListener('click', () => {
       textareaQuestions.value = questions.join('\n');
@@ -496,20 +528,17 @@
       modalSettings.classList.add('hidden');
       iconSettings.classList.remove('animate-spin-slow');
       
-      // 隱藏可能存在的舊問題
       questionBox.classList.remove('scale-100', 'opacity-100', 'translate-y-0');
       questionBox.classList.add('scale-90', 'opacity-0', '-translate-y-10');
-      
       showToast("題庫更新成功！");
     });
 
-    // 初始化載入
     renderWheel();
-    
-    // 確保語音能正確載入
-    window.speechSynthesis.onvoiceschanged = () => {
-      window.speechSynthesis.getVoices();
-    };
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
   </script>
 </body>
 </html>
+
+
