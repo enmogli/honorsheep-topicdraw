@@ -1,0 +1,556 @@
+import React, { useState, useEffect } from 'react';
+import { Settings, Volume2, VolumeX, Edit3, CheckCircle2 } from 'lucide-react';
+
+// 預設的 16 個題目
+const DEFAULT_QUESTIONS = [
+  "課業上有沒有遇到比較困難的地方？",
+  "目前對於時間上還適應嗎？會不會覺得自己太忙？",
+  "有參加社團活動嗎？覺得好玩嗎？",
+  "校園生活還適應嗎？有沒有遇到什麼問題？",
+  "在課業方面有比較困擾的地方嗎？",
+  "對我們領頭羊有什麼想問的問題嗎？",
+  "對於選課上有沒有哪些不懂的地方？",
+  "覺得大學跟高中會不會差異很大，有不適應的地方嗎？",
+  "對於我們這個科系有沒有哪裡不了解的地方？",
+  "寒假過得還好嗎？有去哪裡玩嗎？",
+  "有認識了班上或其他系上的朋友嗎？",
+  "未來有沒有想要嘗試加入社團或其他幹部？",
+  "這學期的課程上還適應嗎？",
+  "是哪個縣市的人？那裡有什麼好吃好玩的？",
+  "目前覺得哪堂課最有趣 /最無聊？",
+  "來靜宜之後有發現附近什麼覺得很好吃的？"
+];
+
+// 柔和可愛的馬卡龍色系
+const COLORS = [
+  '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7', '#C7CEEA', '#F1CBFF',
+  '#FF9AA2', '#E0BBE4', '#957DAD', '#D291BC', '#FEC8D8', '#FFDFD3'
+];
+
+// 建立一個共用的 AudioContext 避免頻繁點擊超出瀏覽器限制
+let sharedAudioCtx = null;
+const getAudioContext = () => {
+  if (!sharedAudioCtx) {
+    sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (sharedAudioCtx.state === 'suspended') {
+    sharedAudioCtx.resume();
+  }
+  return sharedAudioCtx;
+};
+
+// --- 站立推動版可愛綿羊 SVG 元件 ---
+const Sheep = ({ isSpeaking, isSpinning }) => (
+  // 加上 animate-push-strain 讓身體在推的時候有前後施力的感覺
+  <svg viewBox="0 0 120 120" className={`w-40 h-40 md:w-48 md:h-48 drop-shadow-2xl ${isSpinning ? 'animate-push-strain' : ''}`}>
+    
+    {/* 後腳 (雙腳站立支撐) */}
+    <rect x="35" y="75" width="12" height="35" rx="6" fill="#374151" transform="rotate(-15 35 75)" />
+    <rect x="60" y="80" width="12" height="30" rx="6" fill="#374151" transform="rotate(-5 60 80)" />
+
+    {/* 身體 (傾斜向前推的雲朵形狀) */}
+    <path d="M 25 80 C 15 60, 25 35, 50 35 C 70 35, 90 45, 90 65 C 90 85, 75 95, 55 95 C 40 95, 20 100, 25 80 Z" fill="#ffffff" stroke="#f3f4f6" strokeWidth="3" />
+
+    {/* 遠處的手臂 (在身體後方) */}
+    <g className={isSpinning ? "animate-push-horizontal" : ""}>
+      <rect x="65" y="58" width="35" height="10" rx="5" fill="#1f2937" transform="rotate(-20 65 58)" />
+    </g>
+
+    {/* 頭部 */}
+    <g transform="translate(0, 0)">
+      {/* 臉部底色 */}
+      <ellipse cx="75" cy="40" rx="20" ry="16" fill="#374151" transform="rotate(10 75 40)" />
+      
+      {/* 耳朵 */}
+      <ellipse cx="55" cy="35" rx="8" ry="4" fill="#374151" transform="rotate(-30 55 35)" />
+      
+      {/* 頭頂羊毛 */}
+      <path d="M 60 30 C 55 20, 70 15, 75 25 C 85 20, 95 30, 85 38 C 75 40, 65 40, 60 30 Z" fill="#ffffff" />
+      
+      {/* 眼睛 (努力推的時候會變成 > <) */}
+      {isSpinning ? (
+        <g stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none">
+          <polyline points="76,35 81,38 76,41" />
+          <polyline points="91,35 86,38 91,41" />
+        </g>
+      ) : (
+        <g fill="#ffffff">
+          <circle cx="80" cy="38" r="3.5" />
+          <circle cx="90" cy="38" r="3.5" />
+          <circle cx="81" cy="37.5" r="1.5" fill="#000" />
+          <circle cx="91" cy="37.5" r="1.5" fill="#000" />
+        </g>
+      )}
+
+      {/* 腮紅 */}
+      <circle cx="73" cy="46" r="3.5" fill="#ff99aa" opacity="0.8" />
+      
+      {/* 嘴巴 */}
+      {isSpeaking && !isSpinning ? (
+        <ellipse cx="85" cy="46" rx="3" ry="4" fill="#ff99aa" />
+      ) : isSpinning ? (
+        <path d="M 82 45 Q 85 43 88 45" stroke="#ffffff" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      ) : (
+        <path d="M 82 45 Q 85 48 88 45" stroke="#ffffff" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      )}
+    </g>
+
+    {/* 近處的手臂 (在身體前方努力推) */}
+    <g className={isSpinning ? "animate-push-horizontal" : ""} style={{ animationDelay: '0.05s' }}>
+      <rect x="75" y="48" width="35" height="10" rx="5" fill="#374151" transform="rotate(-15 75 48)" />
+    </g>
+
+    {/* 推動時腳下的一點點汗水/衝刺線條 (增加努力的感覺) */}
+    {isSpinning && (
+      <g stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round">
+        <line x1="15" y1="90" x2="5" y2="90" className="animate-dash" />
+        <line x1="20" y1="100" x2="10" y2="100" className="animate-dash" style={{ animationDelay: '0.2s' }} />
+      </g>
+    )}
+  </svg>
+);
+
+// --- 輪盤元件 ---
+const Wheel = ({ questions, rotation }) => {
+  const radius = 150;
+  const angle = 360 / questions.length;
+
+  return (
+    <div className="relative w-72 h-72 md:w-80 md:h-80 flex items-center justify-center flex-shrink-0">
+      {/* 輪盤指標 (三角形) */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-5 z-20">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="#ef4444" stroke="#b91c1c" strokeWidth="1" className="drop-shadow-lg filter">
+          <path d="M12 22L2 2h20L12 22z" />
+        </svg>
+      </div>
+
+      {/* 輪盤本體 */}
+      <div
+        className="w-full h-full rounded-full overflow-hidden border-8 border-yellow-300 shadow-[0_0_30px_rgba(0,0,0,0.1)] relative z-10"
+        style={{
+          transform: `rotate(${rotation}deg)`,
+          transition: 'transform 4s cubic-bezier(0.2, 0.8, 0.2, 1)' 
+        }}
+      >
+        <svg viewBox="-150 -150 300 300" className="w-full h-full">
+          {questions.map((q, i) => {
+            const startAngle = (i * angle - 90) * (Math.PI / 180);
+            const endAngle = ((i + 1) * angle - 90) * (Math.PI / 180);
+            const x1 = radius * Math.cos(startAngle);
+            const y1 = radius * Math.sin(startAngle);
+            const x2 = radius * Math.cos(endAngle);
+            const y2 = radius * Math.sin(endAngle);
+            const largeArc = angle > 180 ? 1 : 0;
+            const pathData = `M 0 0 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+
+            const textAngle = (i + 0.5) * angle - 90;
+
+            return (
+              <g key={i}>
+                <path d={pathData} fill={COLORS[i % COLORS.length]} stroke="#ffffff" strokeWidth="2" />
+                {/* 顯示編號 */}
+                <text
+                  transform={`rotate(${textAngle + 90}) translate(0, -100)`}
+                  textAnchor="middle"
+                  fill="#4B5563"
+                  fontSize={questions.length > 12 ? "18" : "24"}
+                  fontWeight="900"
+                >
+                  {i + 1}
+                </text>
+              </g>
+            );
+          })}
+          {/* 輪盤中心點 */}
+          <circle cx="0" cy="0" r="15" fill="#ffffff" stroke="#e5e7eb" strokeWidth="3" />
+        </svg>
+      </div>
+    </div>
+  );
+};
+
+export default function App() {
+  const [questions, setQuestions] = useState(DEFAULT_QUESTIONS);
+  const [inputText, setInputText] = useState(DEFAULT_QUESTIONS.join('\n'));
+  const [rotation, setRotation] = useState(0);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  // 播放羊咩咩叫聲 (調整為高亢、雀躍的聲音)
+  const playBaaSound = () => {
+    if (isMuted) return;
+    try {
+      const ctx = getAudioContext();
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      // 鋸齒波比較接近聲帶發聲的豐富音色
+      osc.type = 'sawtooth';
+      // 提高音高並呈現上揚感，聽起來更開心雀躍
+      osc.frequency.setValueAtTime(600, ctx.currentTime); 
+      osc.frequency.exponentialRampToValueAtTime(850, ctx.currentTime + 0.25);
+      osc.frequency.linearRampToValueAtTime(750, ctx.currentTime + 0.5);
+
+      // 濾波器讓聲音保留動物感但明亮些
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(2500, ctx.currentTime);
+      filter.frequency.linearRampToValueAtTime(1000, ctx.currentTime + 0.5);
+
+      // 加入顫音 (Vibrato) 模擬羊的「咩~~」抖動感
+      const lfo = ctx.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = 15; // 稍微加快抖動速度
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = 35; // 抖動幅度
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+      lfo.start(ctx.currentTime);
+      lfo.stop(ctx.currentTime + 0.5);
+
+      // 音量控制 (Envelope)
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.5);
+    } catch (e) {
+      console.log("Audio not supported");
+    }
+  };
+
+  // 播放輪盤旋轉的「木頭滾輪」聲音
+  const playSpinSound = () => {
+    if (isMuted) return;
+    try {
+      const ctx = getAudioContext();
+      const totalDuration = 4.0; // 配合輪盤旋轉動畫的4秒
+      const totalTicks = 40; // 總共發出幾次叩叩聲
+
+      for (let i = 0; i < totalTicks; i++) {
+        // 使用緩出 (Ease Out) 演算法，讓聲音越來越慢，模擬摩擦力
+        const progress = i / totalTicks;
+        const easeOut = 1 - Math.pow(1 - progress, 3.5); 
+        const time = ctx.currentTime + (easeOut * totalDuration * 0.95);
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        
+        // 改用方波搭配較低的頻率，模擬木頭厚實的物理碰撞感
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(180, time); // 較低的基頻
+        osc.frequency.exponentialRampToValueAtTime(40, time + 0.05);
+
+        // 加入低通濾波器，切掉刺耳的電子高頻，保留木質沉悶的共鳴
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(600, time);
+        filter.frequency.exponentialRampToValueAtTime(100, time + 0.05);
+
+        // 稍微拉長一點點延音 (Release)，讓木頭聲不要太乾
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(0.12, time + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start(time);
+        osc.stop(time + 0.07);
+      }
+    } catch(e) {
+      console.log("Audio not supported");
+    }
+  };
+
+  const playWinSound = () => {
+    if (isMuted) return;
+    try {
+      const ctx = getAudioContext();
+
+      const playNote = (freq, startTime, duration, type = 'sine', vol = 0.3) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, startTime);
+
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(vol, startTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+
+      const now = ctx.currentTime;
+      playNote(523.25, now, 1.5, 'triangle', 0.2);
+      playNote(659.25, now + 0.1, 1.5, 'triangle', 0.2);
+      playNote(783.99, now + 0.2, 1.5, 'triangle', 0.2);
+      playNote(880.00, now + 0.3, 1.5, 'triangle', 0.2);
+      playNote(1046.50, now + 0.4, 2.0, 'sine', 0.3);
+      playNote(261.63, now + 0.4, 2.0, 'triangle', 0.1);
+    } catch (e) {
+      console.log("Audio not supported");
+    }
+  };
+
+  const speakText = (text) => {
+    if (isMuted || !('speechSynthesis' in window)) return;
+    
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-TW';
+    
+    // 尋找更自然的人聲 (優先選擇 Google 或微軟的高品質台灣/中文語音)
+    const voices = window.speechSynthesis.getVoices();
+    const premiumVoice = voices.find(v => 
+      (v.lang.includes('zh-TW') || v.lang.includes('zh-HK') || v.lang.includes('zh-CN')) && 
+      (v.name.includes('Google') || v.name.includes('Yating') || v.name.includes('HsiaoChen') || v.name.includes('Hanhan') || v.name.includes('Zhiwei'))
+    );
+    
+    if (premiumVoice) {
+      utterance.voice = premiumVoice;
+    }
+    
+    // 降低語速與音高，讓說話語氣更貼近自然真人，不會太像機器人
+    utterance.rate = 0.95;
+    utterance.pitch = 1.05;
+    
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const spinWheel = () => {
+    if (isSpinning || questions.length < 2) return;
+    
+    setIsSpinning(true);
+    setCurrentQuestion(null);
+    setIsSpeaking(false);
+    window.speechSynthesis.cancel();
+    
+    playBaaSound(); // 轉動時發出雀躍的咩咩聲
+    playSpinSound(); // 觸發輪盤旋轉的喀喀聲
+
+    const winningIndex = Math.floor(Math.random() * questions.length);
+    const anglePerSlice = 360 / questions.length;
+    
+    const currentModulo = rotation % 360;
+    const baseRotation = rotation + (360 - currentModulo);
+    const extraSpins = 360 * 5;
+    
+    const targetCenterAngle = winningIndex * anglePerSlice + (anglePerSlice / 2);
+    const clockwiseOffset = 360 - targetCenterAngle;
+    
+    const targetRotation = baseRotation + extraSpins + clockwiseOffset;
+    
+    setRotation(targetRotation);
+
+    setTimeout(() => {
+      setIsSpinning(false);
+      const winnerText = questions[winningIndex];
+      setCurrentQuestion(winnerText);
+      playWinSound();
+      speakText(winnerText);
+    }, 4000);
+  };
+
+  const handleSaveQuestions = () => {
+    const newQuestions = inputText.split('\n').map(q => q.trim()).filter(q => q.length > 0);
+    if (newQuestions.length < 2) {
+      setToastMessage("請至少輸入兩個題目才能進行抽籤喔！");
+      return;
+    }
+    setQuestions(newQuestions);
+    setToastMessage("題庫更新成功！");
+    setShowSettings(false);
+    setCurrentQuestion(null);
+  };
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
+  return (
+    <div className="h-screen w-full bg-gradient-to-br from-green-50 via-teal-50 to-blue-50 font-sans p-2 md:p-4 flex flex-col relative overflow-hidden">
+      
+      {/* 頂部導覽 */}
+      <div className="flex justify-between items-center mb-2 md:mb-4 relative z-40">
+        <button 
+          onClick={() => setShowSettings(true)} 
+          className="p-2 md:p-3 bg-white/50 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-gray-800 transition-colors flex items-center gap-2"
+        >
+          <Settings size={20} className={showSettings ? "animate-spin-slow" : ""} />
+          <span className="font-bold hidden md:inline">管理題庫</span>
+        </button>
+        
+        <div className="text-center flex-1">
+          <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-red-400 to-yellow-400 drop-shadow-sm tracking-widest">
+            咩話好說
+          </h1>
+        </div>
+
+        <button 
+          onClick={() => {
+            setIsMuted(!isMuted);
+            window.speechSynthesis.cancel();
+            setIsSpeaking(false);
+          }}
+          className="p-2 md:p-3 bg-white/50 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-pink-500 transition-colors"
+        >
+          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        </button>
+      </div>
+
+      {/* 題目顯示區塊 */}
+      <div className="absolute top-[18%] md:top-[15%] left-1/2 -translate-x-1/2 w-[90%] max-w-2xl z-50 pointer-events-none">
+        <div className={`transition-all duration-700 transform ${currentQuestion && !isSpinning ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 -translate-y-10'}`}>
+          {currentQuestion && (
+            <div className="bg-white/95 backdrop-blur-sm border-4 border-pink-300 rounded-3xl p-4 md:p-6 shadow-2xl relative pointer-events-auto">
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[16px] border-l-transparent border-t-[20px] border-t-pink-300 border-r-[16px] border-r-transparent"></div>
+              <div className="absolute -bottom-[14px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[12px] border-l-transparent border-t-[16px] border-t-white border-r-[12px] border-r-transparent"></div>
+              <h2 className="text-xl md:text-3xl font-bold text-gray-800 leading-relaxed text-center">
+                {currentQuestion}
+              </h2>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 抽籤主要畫面區 */}
+      <div className="flex-1 flex flex-col items-center justify-center relative w-full min-h-0">
+        
+        {/* 綿羊與輪盤的連動組合：以底部對齊 (items-end) 營造站立於同一平面的感覺 */}
+        <div className="flex items-end justify-center relative w-full max-w-4xl px-2 md:px-4 mb-4 md:mb-8">
+          
+          {/* 共用地板陰影 */}
+          <div className="absolute bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 w-3/4 md:w-[55%] h-6 md:h-8 bg-teal-900/10 rounded-[100%] blur-md -z-10"></div>
+          
+          {/* 左側：站立推動的綿羊 */}
+          <div className="z-20 relative -mr-12 md:-mr-16 mb-2 md:mb-4 scale-[0.8] sm:scale-90 md:scale-110 origin-bottom-right">
+            <Sheep isSpeaking={isSpeaking} isSpinning={isSpinning} />
+          </div>
+
+          {/* 右側：旋轉輪盤 */}
+          <div className="z-10 relative scale-[0.65] sm:scale-75 md:scale-100 origin-bottom">
+            <Wheel questions={questions} rotation={rotation} />
+          </div>
+        </div>
+      </div>
+
+      {/* 抽籤按鈕 */}
+      <div className="mb-6 md:mb-8 text-center relative z-40">
+        <button
+          onClick={spinWheel}
+          disabled={isSpinning || questions.length < 2}
+          className="relative group disabled:opacity-50 disabled:cursor-not-allowed inline-block"
+        >
+          <div className="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-60 group-hover:opacity-100 transition duration-300"></div>
+          <div className="relative bg-gradient-to-b from-yellow-300 to-yellow-500 text-yellow-900 font-black text-xl md:text-3xl px-10 md:px-12 py-4 md:py-5 rounded-full border-4 border-white shadow-[0_10px_0_#ca8a04] hover:-translate-y-1 active:translate-y-2 active:shadow-[0_0px_0_#ca8a04] transition-all">
+            {isSpinning ? '努力轉下去...' : '轉下去'}
+          </div>
+        </button>
+      </div>
+
+      {/* 題庫設定 Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in-up">
+          <div className="bg-white p-6 rounded-3xl shadow-2xl border-2 border-pink-200 w-full max-w-xl relative flex flex-col max-h-[90vh]">
+            <button 
+              onClick={() => setShowSettings(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none"
+            >
+              ✕
+            </button>
+            <h3 className="text-xl font-bold text-gray-700 mb-4 flex items-center gap-2">
+              <Edit3 size={24} className="text-pink-500" />
+              管理題庫
+            </h3>
+            <p className="text-sm text-gray-500 mb-2">請每行輸入一個問題：</p>
+            <textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder="請輸入題目..."
+              className="flex-1 w-full min-h-[200px] p-4 border-2 border-pink-100 rounded-2xl focus:outline-none focus:border-pink-400 transition-colors resize-none mb-4 text-gray-700 leading-relaxed font-medium bg-pink-50/30"
+            />
+            <button
+              onClick={handleSaveQuestions}
+              className="w-full py-3 bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-black text-lg rounded-xl transition-transform hover:scale-[1.02] shadow-md flex-shrink-0"
+            >
+              儲存並關閉
+            </button>
+            <p className="text-center text-sm text-gray-400 mt-3 flex-shrink-0">目前共有 {questions.length} 個題目</p>
+          </div>
+        </div>
+      )}
+
+      {/* Toast 提示訊息 */}
+      {toastMessage && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-800/90 text-white px-6 py-3 rounded-full shadow-2xl z-[110] flex items-center gap-3 animate-bounce">
+          <CheckCircle2 size={20} className="text-green-400" />
+          <span className="font-bold">{toastMessage}</span>
+        </div>
+      )}
+
+      {/* 自定義動畫 CSS */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes fade-in-up {
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+          animation: fade-in-up 0.3s ease-out forwards;
+        }
+        .animate-spin-slow {
+          animation: spin 3s linear infinite;
+        }
+        
+        /* 羊身體用力推的動畫 */
+        @keyframes push-strain {
+          0%, 100% { transform: translateX(0) scaleY(1); }
+          50% { transform: translateX(6px) scaleY(0.96); }
+        }
+        .animate-push-strain {
+          animation: push-strain 0.3s ease-in-out infinite;
+          transform-origin: bottom center;
+        }
+        
+        /* 羊手臂來回推的動畫 */
+        @keyframes push-horizontal {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(8px); }
+        }
+        .animate-push-horizontal {
+          animation: push-horizontal 0.3s ease-in-out infinite;
+        }
+        
+        /* 衝刺/用力流汗線條 */
+        @keyframes dash {
+          0% { opacity: 1; transform: translateX(0); }
+          100% { opacity: 0; transform: translateX(-10px); }
+        }
+        .animate-dash {
+          animation: dash 0.4s linear infinite;
+        }
+      `}} />
+    </div>
+  );
+}
